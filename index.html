@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coder Adventure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: full-bleed WebGL stage, HUD pinned to the corners, modal cards over a dimmed world.
+   Single dark look on purpose: the game always renders as a night-lit arcade screen. */
+:root{
+  color-scheme: dark;
+  --bg:#0b0a14; --ink:#f3efe6; --dim:#a7a3b8; --panel:rgba(16,13,28,.9); --line:rgba(255,255,255,.13);
+  --gold:#ffd166; --hp:#ff4d6d; --core:#b892ff; --accent:#8f7bff;
+  --c:#cfd2dc; --r:#4ea8ff; --e:#c06bff; --l:#ffb22e;
+  --display:"Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body:"Barlow", "Segoe UI", system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0;cursor:crosshair}
+#stage canvas{display:block;width:100%;height:100%}
+.hidden{display:none!important}
+button{font:700 14px/1 var(--body);padding:11px 18px;border:0;border-radius:10px;background:var(--accent);color:#fff;cursor:pointer;letter-spacing:.02em}
+button:hover{filter:brightness(1.12)} button:disabled{opacity:.42;cursor:not-allowed;filter:none}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.ghost{background:rgba(255,255,255,.1)} button.gold{background:linear-gradient(180deg,#ffcc4d,#e59a00);color:#241500}
+/* crosshair */
+#xh{position:fixed;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;pointer-events:none}
+#xh i{position:absolute;background:#fff;box-shadow:0 0 4px #000}
+#xh i:nth-child(1){left:13px;top:0;width:2px;height:8px}
+#xh i:nth-child(2){left:13px;bottom:0;width:2px;height:8px}
+#xh i:nth-child(3){top:13px;left:0;height:2px;width:8px}
+#xh i:nth-child(4){top:13px;right:0;height:2px;width:8px}
+#xh.hit i{background:var(--hp)}
+/* HUD */
+.hud{position:fixed;pointer-events:none;text-shadow:0 1px 3px #000}
+#hudL{left:18px;top:calc(16px + env(safe-area-inset-top,0px));width:min(300px,40vw)}
+.bar{height:15px;background:rgba(0,0,0,.55);border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative}
+.bar>b{display:block;height:100%;background:linear-gradient(90deg,#ff2d55,#ff7a8a);transition:width .12s}
+.bar>span{position:absolute;inset:0;font:600 10px/15px var(--body);text-align:center;font-variant-numeric:tabular-nums}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font:600 14px var(--body);align-items:center;font-variant-numeric:tabular-nums}
+.row .coin{color:var(--gold)} .row .core{color:var(--core)}
+#dashBar{height:5px;margin-top:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden}
+#dashBar>b{display:block;height:100%;background:linear-gradient(90deg,#7dff6a,#e8ff6a);width:100%;transition:width .1s}
+#dashBar{height:7px!important}#dashBar.low>b{background:#ff9a3a}#dashBar.low{animation:ultPulse .3s ease-in-out infinite alternate}
+#hudT{left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);text-align:center;width:min(560px,60vw)}
+#where{font:700 12px var(--display);letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+#waveTxt{font:700 24px var(--display);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+#bossBox{margin-top:8px}
+#bossName{font:700 15px var(--display);letter-spacing:.06em;margin-bottom:4px;color:#ffd0d0}
+#bossBar{height:16px}
+#bossBar>b{background:linear-gradient(90deg,#b0002a,#ff4d6d)}
+#bossBar .tick{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.7)}
+#bossPhase{font:600 11px var(--body);color:var(--dim);margin-top:3px}
+#hudW{left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:8px}
+.slot{width:88px;padding:6px 6px 5px;border-radius:10px;background:rgba(0,0,0,.55);border:2px solid transparent;text-align:center;font:600 11px var(--body);opacity:.55}
+.slot.on{opacity:1;border-color:currentColor;background:rgba(0,0,0,.72)}
+.slot .k{font:700 10px var(--display);color:var(--dim)} .slot .n{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .lv{font:700 10px var(--body);color:var(--ink)}
+#hudR{right:16px;top:calc(16px + env(safe-area-inset-top,0px));width:min(250px,30vw);display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.chip{font:600 10px var(--body);padding:3px 7px;border-radius:999px;background:rgba(0,0,0,.6);border:1px solid var(--line)}
+#hudB{left:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));font:600 12px var(--body);color:var(--dim);line-height:1.6;max-width:32vw}
+#prompt{left:50%;top:62%;transform:translateX(-50%);padding:9px 16px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font:600 14px var(--body)}
+#prompt kbd{display:inline-block;padding:2px 7px;margin-right:8px;border-radius:5px;background:#fff;color:#111;font:700 12px var(--display)}
+#banner{left:50%;top:28%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:90vw}
+#banner h1{margin:0;font:700 clamp(30px,6vw,58px)/1.05 var(--display);letter-spacing:.04em;text-shadow:0 4px 24px rgba(0,0,0,.8);text-wrap:balance}
+#banner p{margin:6px 0 0;font:600 16px var(--body);color:var(--dim)}
+#banner.show{animation:ban 2.6s ease forwards}
+@keyframes ban{0%{opacity:0;transform:translate(-50%,-40%) scale(.9)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
+#toasts{right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.toast{padding:7px 12px;border-radius:9px;background:var(--panel);border-left:4px solid var(--gold);font:600 13px var(--body);animation:toast 2.8s ease forwards}
+@keyframes toast{0%{opacity:0;transform:translateX(20px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+#vign{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 160px 40px rgba(255,0,40,0);transition:box-shadow .25s}
+#vign.hurt{box-shadow:inset 0 0 160px 50px rgba(255,0,40,.5);transition:none}
+#fade{position:fixed;inset:0;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .45s}
+#fade.on{opacity:1}
+#cineBox{position:fixed;inset:0;pointer-events:none;z-index:30}
+#cineBox .lb{position:absolute;left:0;right:0;height:11vh;background:#000;transition:transform .5s ease}
+#cineBox .lb.t{top:0;transform:translateY(-100%)}#cineBox .lb.b{bottom:0;transform:translateY(100%)}
+#cineBox.on .lb{transform:none}
+#cineSub{position:absolute;left:50%;bottom:13vh;transform:translateX(-50%);width:min(900px,90vw);text-align:center;font:500 22px/1.35 var(--body);color:#fff;text-shadow:0 2px 8px #000,0 0 2px #000;opacity:0;transition:opacity .4s}
+#cineSub.show{opacity:1}#cineSub b{font-family:var(--display);letter-spacing:.04em}
+#bSkip{position:absolute;right:20px;bottom:calc(11vh + 14px);pointer-events:auto;opacity:.75}#bSkip small{opacity:.6;margin-left:4px}
+body.cine .hud,body.cine #mute{visibility:hidden}
+.etag.ally .en{font-size:12px}.etag.ally .ea{color:#cfd8ff}
+#fadeTxt{position:absolute;left:0;right:0;top:50%;text-align:center;font:600 20px 'Chakra Petch',sans-serif;letter-spacing:.08em;color:var(--dim)}
+#eliteTags{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.etag{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:2px;text-shadow:0 1px 3px #000;white-space:nowrap}
+.etag .en{font:700 13px var(--display);color:var(--gold);letter-spacing:.04em}
+.etag .ea{font:600 10px var(--body);color:#ffb0a0;text-transform:uppercase;letter-spacing:.12em}
+.etag i{display:block;width:110px;height:6px;border-radius:3px;background:rgba(0,0,0,.6);overflow:hidden;border:1px solid rgba(255,255,255,.25)}
+.etag b{display:block;height:100%;background:linear-gradient(90deg,#ff3a2a,#ffb020)}
+.dmgn{position:absolute;left:0;top:0;pointer-events:none;font:700 16px var(--display);color:#fff;text-shadow:0 2px 0 #000,0 0 6px rgba(0,0,0,.6);opacity:0;transform:translate(-50%,-50%)}
+.dmgn.go{animation:dmgUp .8s ease-out forwards}
+@keyframes dmgUp{0%{opacity:1;transform:translate(-50%,-50%) scale(1.5)}15%{transform:translate(-50%,-70%) scale(1)}100%{opacity:0;transform:translate(-50%,-180%) scale(.9)}}
+#hudU{left:50%;bottom:86px;transform:translateX(-50%);width:min(360px,60vw)}
+#ultBar{position:relative;height:16px;border-radius:9px;background:rgba(10,12,24,.65);border:1px solid rgba(255,255,255,.25);overflow:hidden}
+#ultFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff8a2a,#ffd84a);transition:width .15s}
+#ultTxt{position:absolute;inset:0;font:700 10px/16px var(--display);letter-spacing:.14em;text-align:center;color:#fff;text-shadow:0 1px 2px #000}
+#ultBar.ready{border-color:#ffd84a;box-shadow:0 0 14px #ffb020,0 0 2px #fff inset;animation:ultPulse .8s ease-in-out infinite alternate}
+#ultBar.ready #ultFill{background:linear-gradient(90deg,#ffd84a,#fff2a0,#ffd84a)}
+@keyframes ultPulse{from{transform:scale(1)}to{transform:scale(1.04)}}
+#modePick{display:flex;gap:10px;margin:0 0 14px;flex-wrap:wrap}#modePick button{flex:1;min-width:200px}#modePick button.sel{background:var(--accent);box-shadow:0 0 0 2px #fff inset}
+#diag{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:min(720px,92vw);padding:8px 12px;border-radius:8px;background:#3a0d14;border:1px solid #ff6a7a;color:#ffd6db;font:600 12px/1.4 var(--body);z-index:20;pointer-events:none}
+/* panels */
+.panel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,5,14,.6);backdrop-filter:blur(3px)}
+.card{width:min(900px,100%);max-height:calc(100% - 8px);overflow:auto;padding:24px 28px;border-radius:18px;background:var(--panel);border:1px solid var(--line);box-shadow:0 20px 80px rgba(0,0,0,.6)}
+.card h1{margin:0 0 4px;font:700 clamp(32px,6vw,52px)/1 var(--display);letter-spacing:.05em}
+.card h2{margin:0 0 6px;font:700 24px var(--display);letter-spacing:.03em}
+.card p.sub{margin:0 0 14px;color:var(--dim);font:500 15px/1.5 var(--body);max-width:68ch}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;font:500 14px var(--body);color:var(--dim);margin:12px 0}
+.keys b{color:var(--ink);font:700 13px var(--display)}
+#err{color:#ff8a8a;font:600 13px var(--body);white-space:pre-wrap}
+#loadTxt{font:600 13px var(--display);color:var(--dim);letter-spacing:.08em}
+.credits{margin:14px 0 0;font:500 12px/1.5 var(--body);color:var(--dim)}
+.credits a{color:var(--ink)}
+.tagline{font:700 12px var(--display);letter-spacing:.24em;color:var(--core);text-transform:uppercase;margin-bottom:6px}
+/* reward cards */
+#chHead{font:700 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:4px 0 8px}
+#choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pick-card{position:relative;display:flex;flex-direction:column;gap:6px;text-align:left;padding:14px 14px 16px;border-radius:14px;background:#1c1830;border:2px solid var(--c);color:var(--ink);font:500 13px/1.4 var(--body);min-height:150px;animation:flip .4s ease both;letter-spacing:0}
+.pick-card:hover:not(:disabled){transform:translateY(-3px);filter:brightness(1.15)}
+.pick-card .key{position:absolute;right:10px;top:10px;font:700 11px var(--display);color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:2px 6px}
+.pick-card .rar{font:700 10px var(--display);letter-spacing:.12em}
+.pick-card .nm{font:700 17px var(--display)}
+.pick-card .ds{color:var(--dim)}
+.pick-card .own{font:600 11px var(--body);color:var(--gold)}
+.pick-card.R{border-color:var(--r)} .pick-card.R .rar{color:var(--r)}
+.pick-card.E{border-color:var(--e);box-shadow:0 0 22px rgba(192,107,255,.35)} .pick-card.E .rar{color:var(--e)}
+.pick-card.L{border-color:var(--l);box-shadow:0 0 30px rgba(255,178,46,.55);background:linear-gradient(160deg,#3a2a08,#1c1830)} .pick-card.L .rar{color:var(--l)}
+.pick-card.C .rar{color:var(--c)}
+.pick-card.chosen{outline:3px solid var(--gold);transform:scale(1.03)}
+.pick-card.faded{opacity:.3}
+.pick-card:disabled{cursor:default;opacity:1}
+.pick-card.faded:disabled{opacity:.3}
+.divider{height:1px;background:var(--line);margin:18px 0 14px}
+/* gacha */
+#pulls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}
+#pulls:empty{display:none}
+.pc{position:relative;border-radius:12px;padding:12px 10px;background:#1c1830;border:2px solid var(--c);min-height:120px;animation:flip .45s ease both}
+.pc .rar{font:700 10px var(--display);letter-spacing:.1em}
+.pc .nm{font:700 14px var(--display);margin:6px 0 4px}
+.pc .ds{font:500 12px/1.35 var(--body);color:var(--dim)}
+.pc.C .rar{color:var(--c)}
+.pc.R{border-color:var(--r);box-shadow:0 0 18px rgba(78,168,255,.35)} .pc.R .rar{color:var(--r)}
+.pc.E{border-color:var(--e);box-shadow:0 0 24px rgba(192,107,255,.5)} .pc.E .rar{color:var(--e)}
+.pc.L{border-color:var(--l);box-shadow:0 0 34px rgba(255,178,46,.75);background:linear-gradient(160deg,#3a2a08,#1c1830)} .pc.L .rar{color:var(--l)}
+@keyframes flip{from{opacity:0;transform:rotateY(90deg) scale(.85)}to{opacity:1;transform:none}}
+.odds{font:600 12px var(--body);color:var(--dim);margin-top:8px}
+/* forge / lists */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.up{padding:12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.up .t{font:700 14px var(--display);display:flex;justify-content:space-between;gap:8px}
+.up .d{font:500 13px/1.4 var(--body);color:var(--dim);margin:4px 0 8px}
+.up button{padding:8px 12px;font-size:12px;width:100%}
+.pips{display:flex;gap:3px;margin-bottom:8px}
+.pips i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.12)}
+.pips i.on{background:var(--core)}
+.pick{cursor:pointer;transition:transform .1s}
+.pick:hover{transform:translateY(-2px)}
+.pick.sel{outline:2px solid var(--gold)}
+.pick.lock{opacity:.4;cursor:not-allowed}
+.stat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.stat div{padding:10px;border-radius:10px;background:rgba(255,255,255,.05);text-align:center;font:500 12px var(--body);color:var(--dim)}
+.stat b{display:block;font:700 22px var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.settings{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center;font:600 13px var(--body);color:var(--dim);margin-top:14px}
+.settings input{width:100%;accent-color:var(--accent)}
+#mute{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:6px 10px;font-size:12px;background:rgba(0,0,0,.5);z-index:5}
+@media (max-width:720px){
+  #choices{grid-template-columns:1fr}
+  #pulls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #hudR,#hudB{display:none}
+  .slot{width:60px}
+}
+@media (prefers-reduced-motion: reduce){ #banner.show,.toast,.pc,.pick-card{animation-duration:.01s} }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="xh" class="hidden"><i></i><i></i><i></i><i></i></div>
+<div id="vign"></div>
+
+<div class="hud hidden" id="hudL">
+  <div class="bar" id="hpBar"><b id="hpFill" style="width:100%"></b><span id="hpTxt">150 / 150</span></div>
+  <div id="dashBar"><b id="dashFill"></b></div>
+  <div class="row"><span class="coin">$ <span id="coins">0</span></span><span class="core">✦ <span id="cores">0</span> benefits</span><span id="kills" style="color:var(--dim)">0 kills</span><span id="pots" style="color:#7dff9a"></span></div>
+</div>
+<div class="hud hidden" id="hudT">
+  <div id="where">Home Office</div>
+  <div id="waveTxt"></div>
+  <div id="bossBox" class="hidden">
+    <div id="bossName"></div>
+    <div class="bar" id="bossBar"><b id="bossFill" style="width:100%"></b></div>
+    <div id="bossPhase"></div>
+  </div>
+</div>
+<div class="hud hidden" id="hudW"></div>
+<div class="hud hidden" id="hudR"></div>
+<div class="hud hidden" id="hudB"></div>
+<div class="hud hidden" id="hudU"><div id="ultBar"><b id="ultFill"></b><span id="ultTxt">ULTIMATE</span></div></div>
+<div class="hud hidden" id="prompt"></div>
+<div class="hud" id="banner"><h1 id="banTitle"></h1><p id="banSub"></p></div>
+<div class="hud" id="toasts"></div>
+<div id="eliteTags"></div>
+<div id="diag" class="hidden"></div>
+<div id="fade"><span id="fadeTxt"></span></div>
+<div id="cineBox" class="hidden"><div class="lb t"></div><div class="lb b"></div><div id="cineSub"></div><button id="bSkip" class="ghost">Skip ▸ <small>Space</small></button></div>
+
+<div class="panel" id="pMenu">
+  <div class="card">
+    <div class="tagline">A roguelike shooter about one developer versus everything that breaks the build</div>
+    <h1>CODER ADVENTURE</h1>
+    <p class="sub">Squash bugs, survive testers, out-argue business analysts, product owners and clients across five worlds,
+      from the Legacy Codebase to Production Inferno, rescuing a teammate at the end of each world, then survive Layoff Season together. Every sprint they get a little tougher. After each sprint pick an upgrade that changes how you shoot,
+      spend your Salary on gacha pulls, beat each world's boss, and bring Benefits home to grow stronger for good.</p>
+    <div class="keys">
+      <b>WASD</b><span>Move (relative to your view)</span>
+      <b>Mouse</b><span>Aim left, right, up and down. Click the game to lock the mouse, hold Left Click to fire.</span>
+      <b>Space / Shift</b><span>Roll: dodges all damage, costs stamina</span>
+      <b>R</b><span>Drink a potion (refills each new world)</span>
+      <b>1–6 · Wheel · Q</b><span>Switch gear. You start with a keyboard; each rescued colleague brings a new piece</span>
+      <b>E</b><span>Use the Learning Center, Toolbelt and Sprint Portal</span>
+      <b>F</b><span>Ultimate, when the bar is full (depends on your gear)</span>
+      <b>Melee mode</b><span>Left click: 5-hit combo · hold Right click: block (just before a hit = perfect block)</span>
+      <b>T · Arrows</b><span>Toggle auto-fire (ranged) · turn and aim without the mouse</span>
+      <b>M · Esc</b><span>Mute · pause, graphics and volume</span>
+    </div>
+    <div id="err"></div>
+    <div class="btns"><button id="bStart" disabled>Log in</button><span id="loadTxt">Loading…</span></div>
+    <p class="credits">Best with a mouse and keyboard. Models: <a href="https://quaternius.com" target="_blank" rel="noopener">Quaternius</a> (Ultimate Modular Men, Sci-Fi Essentials and Ultimate Monsters, CC0) and
+      <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> (blasters, sky and sound effects, CC0). Built with three.js.</p>
+  </div>
+</div>
+
+<div class="panel hidden" id="pPause">
+  <div class="card" style="width:min(540px,100%)">
+    <h2>Paused</h2>
+    <p class="sub">Abandoning a run sends you back to the Home Office. You keep the Benefits you've earned.</p>
+    <div class="settings">
+      <span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="85">
+      <span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="55">
+    </div>
+    <div class="btns"><button id="bResume">Resume</button><button class="ghost" id="bQuality">Graphics: High</button><button class="ghost" id="bAbandon">Abandon run</button></div>
+  </div>
+</div>
+
+<div class="panel hidden" id="pGacha">
+  <div class="card">
+    <h2 id="gTitle">Supply Cache</h2>
+    <p class="sub" id="gSub"></p>
+    <div id="chHead">Choose one reward · press 1, 2 or 3</div>
+    <div id="choices"></div>
+    <div class="btns" style="margin-top:10px"><button class="ghost" id="bReroll">Reroll</button></div>
+    <div class="divider"></div>
+    <div class="row" style="margin:0"><span class="coin">$ <span id="gCoins">0</span> salary</span><span style="color:var(--dim)" id="gPity"></span><span style="color:var(--gold)" id="gTix"></span></div>
+    <div id="pulls"></div>
+    <div class="odds" id="gOdds"></div>
+    <div class="btns">
+      <button class="gold" id="bPull1">Pull ×1</button>
+      <button class="gold" id="bPull10">Pull ×10</button>
+      <button class="gold hidden" id="bTicket">Use Bonus Ticket (Certification+)</button>
+      <span style="flex:1"></span>
+      <button id="bGContinue">Continue ▸</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel hidden" id="pForge">
+  <div class="card">
+    <h2>Learning Center</h2>
+    <p class="sub">Spend Benefits on permanent skills. They stay with you after burnout.</p>
+    <div class="row" style="margin:0 0 12px"><span class="core">✦ <span id="fCores">0</span> benefits</span></div>
+    <div class="grid" id="forgeList"></div>
+    <div class="btns"><button id="bFClose">Close</button></div>
+  </div>
+</div>
+
+<div class="panel hidden" id="pArmory">
+  <div class="card">
+    <h2>Toolbelt</h2>
+    <p class="sub">Pick the gear you start each run with. Unlock more at the Learning Center, or find them during a run in Arsenal Crates.</p>
+    <div class="grid" id="armoryList"></div>
+    <div class="btns"><button id="bAClose">Close</button></div>
+  </div>
+</div>
+
+<div class="panel hidden" id="pPortal">
+  <div class="card">
+    <h2>Sprint Portal</h2>
+    <p class="sub">Choose where to start your run. A world unlocks as a starting point once you've beaten the boss before it.</p>
+    <div id="modePick"><button id="mRanged">🔫 Ranged · shoot with your gear</button><button id="mMelee">⚔ Melee · swing your gear, block with a shield</button></div>
+    <div class="grid" id="portalList"></div>
+    <div class="btns"><button class="ghost" id="bPClose">Not yet</button></div>
+  </div>
+</div>
+
+<div class="panel hidden" id="pDead">
+  <div class="card" style="width:min(660px,100%)">
+    <h1 id="dTitle">Burnout!</h1>
+    <p class="sub" id="dSub">You log off and wake up at the Home Office. Your Benefits are safe.</p>
+    <div class="stat" id="dStats"></div>
+    <div class="btns"><button id="bDHome">Back to the Home Office</button></div>
+  </div>
+</div>
+<div class="panel hidden" id="pWin">
+  <div class="card" style="width:min(660px,100%)">
+    <div class="tagline">You beat the layoff</div>
+    <h1 style="color:var(--gold)">SPRINT SURVIVED</h1>
+    <p class="sub">The Downsizer is gone, the whole team is back, and your Benefits are yours to keep. Start a new run any time from the Sprint Portal.</p>
+    <div class="stat" id="wStats"></div>
+    <div class="btns"><button id="bWHome">Back to the Home Office</button></div>
+  </div>
+</div>
+<button id="mute" class="hidden">Sound: on</button>
+
+<script type="module" src="game.js"></script>
+
+</body>
+</html>
