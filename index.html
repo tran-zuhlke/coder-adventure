@@ -104,7 +104,7 @@ body.cine .hud,body.cine #mute{visibility:hidden}
 #ultBar.ready{border-color:#ffd84a;box-shadow:0 0 14px #ffb020,0 0 2px #fff inset;animation:ultPulse .8s ease-in-out infinite alternate}
 #ultBar.ready #ultFill{background:linear-gradient(90deg,#ffd84a,#fff2a0,#ffd84a)}
 @keyframes ultPulse{from{transform:scale(1)}to{transform:scale(1.04)}}
-#modePick{display:flex;gap:10px;margin:0 0 14px;flex-wrap:wrap}#modePick button{flex:1;min-width:200px}#modePick button.sel{background:var(--accent);box-shadow:0 0 0 2px #fff inset}
+.slot.stance{border-style:dashed}
 #diag{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:min(720px,92vw);padding:8px 12px;border-radius:8px;background:#3a0d14;border:1px solid #ff6a7a;color:#ffd6db;font:600 12px/1.4 var(--body);z-index:20;pointer-events:none}
 /* panels */
 .panel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,5,14,.6);backdrop-filter:blur(3px)}
@@ -223,7 +223,8 @@ body.cine .hud,body.cine #mute{visibility:hidden}
       <b>WASD</b><span>Move</span>
       <b>Mouse</b><span>Aim · Left click to attack</span>
       <b>Space</b><span>Roll to dodge</span>
-      <b>Right click</b><span>Block (melee)</span>
+      <b>X</b><span>Switch gun ⇄ melee</span>
+      <b>Right click</b><span>Roll (gun) · block (melee)</span>
       <b>E · R · F</b><span>Interact · Potion · Ultimate</span>
       <b>Esc</b><span>Pause and all controls</span>
     </div>
@@ -250,7 +251,9 @@ body.cine .hud,body.cine #mute{visibility:hidden}
       <b>1–6 · Wheel · Q</b><span>Switch gear. You start with a keyboard; each rescued colleague brings a new piece</span>
       <b>E</b><span>Use the Learning Center, Toolbelt and Sprint Portal</span>
       <b>F</b><span>Ultimate, when the bar is full (depends on your gear)</span>
-      <b>Melee mode</b><span>Left click: 5-hit combo · hold Right click: block (just before a hit = perfect block)</span>
+      <b>X · Middle click</b><span>Switch between gun and melee at any time</span>
+      <b>Melee</b><span>Left click: 5-hit combo · hold Right click: block (just before a hit = perfect block)</span>
+      <b>Gun</b><span>Hold Left click to shoot · Right click: roll</span>
       <b>T · Arrows</b><span>Toggle auto-fire (ranged) · turn and aim without the mouse</span>
       <b>M · Esc</b><span>Mute · pause, graphics and volume</span>
     </div>
@@ -303,7 +306,6 @@ body.cine .hud,body.cine #mute{visibility:hidden}
   <div class="card">
     <h2>Sprint Portal</h2>
     <p class="sub">Choose where to start your run. A world unlocks as a starting point once you've beaten the boss before it.</p>
-    <div id="modePick"><button id="mRanged">🔫 Ranged · shoot with your gear</button><button id="mMelee">⚔ Melee · swing your gear, block with a shield</button></div>
     <div class="grid" id="portalList"></div>
     <div class="btns"><button class="ghost" id="bPClose">Not yet</button></div>
   </div>
