@@ -119,6 +119,8 @@ body.cine .hud,body.cine #mute{visibility:hidden}
 #loadTxt{font:600 13px var(--display);color:var(--dim);letter-spacing:.08em}
 .credits{margin:14px 0 0;font:500 12px/1.5 var(--body);color:var(--dim)}
 .credits a{color:var(--ink)}
+#pMenu .card{width:min(680px,100%)}
+.allkeys{margin:10px 0 4px}.allkeys summary{cursor:pointer;color:var(--ink);font:700 13px var(--display);letter-spacing:.04em}.allkeys .keys{font-size:13px}
 .tagline{font:700 12px var(--display);letter-spacing:.24em;color:var(--core);text-transform:uppercase;margin-bottom:6px}
 /* reward cards */
 #chHead{font:700 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:4px 0 8px}
@@ -182,6 +184,7 @@ body.cine .hud,body.cine #mute{visibility:hidden}
 </style>
 </head>
 <body>
+
 <div id="stage"></div>
 <div id="xh" class="hidden"><i></i><i></i><i></i><i></i></div>
 <div id="vign"></div>
@@ -214,11 +217,31 @@ body.cine .hud,body.cine #mute{visibility:hidden}
 
 <div class="panel" id="pMenu">
   <div class="card">
-    <div class="tagline">A roguelike shooter about one developer versus everything that breaks the build</div>
     <h1>CODER ADVENTURE</h1>
-    <p class="sub">Squash bugs, survive testers, out-argue business analysts, product owners and clients across five worlds,
-      from the Legacy Codebase to Production Inferno, rescuing a teammate at the end of each world, then survive Layoff Season together. Every sprint they get a little tougher. After each sprint pick an upgrade that changes how you shoot,
-      spend your Salary on gacha pulls, beat each world's boss, and bring Benefits home to grow stronger for good.</p>
+    <p class="sub">One developer versus everything that breaks the build.</p>
+    <div class="keys">
+      <b>WASD</b><span>Move</span>
+      <b>Mouse</b><span>Aim · Left click to attack</span>
+      <b>Space</b><span>Roll to dodge</span>
+      <b>Right click</b><span>Block (melee)</span>
+      <b>E · R · F</b><span>Interact · Potion · Ultimate</span>
+      <b>Esc</b><span>Pause and all controls</span>
+    </div>
+    <div id="err"></div>
+    <div class="btns"><button id="bStart" disabled>Log in</button><span id="loadTxt">Loading…</span></div>
+    <p class="credits">Best with mouse and keyboard · Models and sounds by <a href="https://quaternius.com" target="_blank" rel="noopener">Quaternius</a> and <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> (CC0) · three.js</p>
+  </div>
+</div>
+
+<div class="panel hidden" id="pPause">
+  <div class="card" style="width:min(540px,100%)">
+    <h2>Paused</h2>
+    <p class="sub">Abandoning a run sends you back to the Home Office. You keep the Benefits you've earned.</p>
+    <div class="settings">
+      <span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="85">
+      <span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="55">
+    </div>
+    <details class="allkeys"><summary>All controls</summary>
     <div class="keys">
       <b>WASD</b><span>Move (relative to your view)</span>
       <b>Mouse</b><span>Aim left, right, up and down. Click the game to lock the mouse, hold Left Click to fire.</span>
@@ -231,21 +254,7 @@ body.cine .hud,body.cine #mute{visibility:hidden}
       <b>T · Arrows</b><span>Toggle auto-fire (ranged) · turn and aim without the mouse</span>
       <b>M · Esc</b><span>Mute · pause, graphics and volume</span>
     </div>
-    <div id="err"></div>
-    <div class="btns"><button id="bStart" disabled>Log in</button><span id="loadTxt">Loading…</span></div>
-    <p class="credits">Best with a mouse and keyboard. Models: <a href="https://quaternius.com" target="_blank" rel="noopener">Quaternius</a> (Ultimate Modular Men, Sci-Fi Essentials and Ultimate Monsters, CC0) and
-      <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> (blasters, sky and sound effects, CC0). Built with three.js.</p>
-  </div>
-</div>
-
-<div class="panel hidden" id="pPause">
-  <div class="card" style="width:min(540px,100%)">
-    <h2>Paused</h2>
-    <p class="sub">Abandoning a run sends you back to the Home Office. You keep the Benefits you've earned.</p>
-    <div class="settings">
-      <span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="85">
-      <span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="55">
-    </div>
+    </details>
     <div class="btns"><button id="bResume">Resume</button><button class="ghost" id="bQuality">Graphics: High</button><button class="ghost" id="bAbandon">Abandon run</button></div>
   </div>
 </div>
